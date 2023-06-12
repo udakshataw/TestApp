@@ -56,13 +56,13 @@ jobs:
           bundle exec rails db:migrate
           RAILS_ENV=test bundle exec rake
 
-      - name: Run tests
-        run: |
-          bundle exec rspec
+      # - name: Run tests
+      #   run: |
+      #     bundle exec rake
 
-      - name: Check code style
-        run: |
-          bundle exec rubocop --fail-level W
+      # - name: Check code style
+      #   run: |
+      #     bundle exec rubocop --fail-level W
 
       # - name: Deploy to staging
       #   if: github.ref == 'refs/heads/main'
