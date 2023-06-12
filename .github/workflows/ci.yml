@@ -1,15 +1,17 @@
-name: Test CI
+name: Ruby on Rails CI
 
 on:
   push:
-    branches: [ main ]
+    branches:
+      - main
   pull_request:
-    branches: [ main ]
+    branches:
+      - main
 
 jobs:
-  test:
+  build:
     runs-on: ubuntu-latest
-    
+
     services:
       postgres:
         image: postgres:11
@@ -22,22 +24,98 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
+
     steps:
-      - uses: actions/checkout@v3
-      - name: Setup Ruby
-        uses: ruby/setup-ruby@ec02537da5712d66d4d50a0f33b7eb52773b5ed1
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
         with:
-          ruby-version: '3.1'
-      - name: Build and run test
+          ruby-version: '2.7'
+
+      - name: Install dependencies
+        run: |
+          gem install bundler
+          bundle install --jobs 4 --retry 3 --path vendor/bundle
+
+      # - name: Set up database
+      #   run: |
+      #     cp config/database.yml.ci config/database.yml
+      #     bundle exec rails db:create
+      #     bundle exec rails db:schema:load
+
+      - name: Set up database
         env:
           DATABASE_URL: postgres://postgres:@localhost:5432/test
           RAILS_ENV: test
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
         run: |
-          sudo apt-get -yqq install libpq-dev
-          gem install bundler:1.17.3
-          bundle install --jobs 4 --retry 3
           bundle exec rails db:create
-          bundle exec rails db:migrate
+          bundle exec rails db:schema:load
           RAILS_ENV=test bundle exec rake
+
+      - name: Run tests
+        run: |
+          bundle exec rspec
+
+      - name: Check code style
+        run: |
+          bundle exec rubocop --fail-level W
+
+      # - name: Deploy to staging
+      #   if: github.ref == 'refs/heads/main'
+      #   run: |
+      #     # Your deployment steps here for staging environment
+
+      # - name: Deploy to production
+      #   if: github.ref == 'refs/tags/v*' && startsWith(github.ref, 'refs/tags/v1.')
+      #   run: |
+      #     # Your deployment steps here for production environment
+
+
+# old workflow
+# name: Test CI
+
+# on:
+#   push:
+#     branches: [ main ]
+#   pull_request:
+#     branches: [ main ]
+
+# jobs:
+#   test:
+#     runs-on: ubuntu-latest
+    
+#     services:
+#       postgres:
+#         image: postgres:11
+#         env:
+#           POSTGRES_USER: postgres
+#           POSTGRES_PASSWORD: postgres
+#         ports: ['5432:5432']
+#         options:
+#           --health-cmd pg_isready
+#           --health-interval 10s
+#           --health-timeout 5s
+#           --health-retries 5
+#     steps:
+#       - uses: actions/checkout@v3
+#       - name: Setup Ruby
+#         uses: ruby/setup-ruby@ec02537da5712d66d4d50a0f33b7eb52773b5ed1
+#         with:
+#           ruby-version: '3.1'
+#       - name: Build and run test
+#         env:
+#           DATABASE_URL: postgres://postgres:@localhost:5432/test
+#           RAILS_ENV: test
+#           POSTGRES_USER: postgres
+#           POSTGRES_PASSWORD: postgres
+#         run: |
+#           sudo apt-get -yqq install libpq-dev
+#           gem install bundler:1.17.3
+#           bundle install --jobs 4 --retry 3
+#           bundle exec rails db:create
+#           bundle exec rails db:migrate
+#           RAILS_ENV=test bundle exec rake
