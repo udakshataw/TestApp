@@ -39,12 +39,6 @@ jobs:
           gem install bundler
           bundle install --jobs 4 --retry 3
 
-      # - name: Set up database
-      #   run: |
-      #     cp config/database.yml.ci config/database.yml
-      #     bundle exec rails db:create
-      #     bundle exec rails db:schema:load
-
       - name: Set up database
         env:
           DATABASE_URL: postgres://postgres:@localhost:5432/test
@@ -56,13 +50,17 @@ jobs:
           bundle exec rails db:migrate
           RAILS_ENV=test bundle exec rake
 
-      # - name: Run tests
-      #   run: |
-      #     bundle exec rake
+      - name: Run tests
+        run: |
+          bundle exec rake
 
       # - name: Check code style
       #   run: |
       #     bundle exec rubocop --fail-level W
+
+      - name: Check code style
+        run: |
+          rubocop --lint
 
       # - name: Deploy to staging
       #   if: github.ref == 'refs/heads/main'
